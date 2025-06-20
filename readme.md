@@ -16,7 +16,7 @@ module.exports = {
 ### 安装依赖
 
 ```
-npm install twebp -g
+npm install twebp2 -g
 ```
 
 ### 转换图片
