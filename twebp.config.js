@@ -1,5 +1,5 @@
 module.exports = {
-  inputFolder: "./public",
+  inputFolder: "./public_original",
   outputFolder: "./output",
   backFolder: "./error",
   include: [".png", ".jpg", ".jpeg", ".gif"],

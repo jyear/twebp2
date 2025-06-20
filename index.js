@@ -82,7 +82,7 @@ async function doHandle(folder, output, back) {
   for (let i = 0; i < files.length; i++) {
     const filePath = files[i];
     const inputPath = path.join(folder, filePath);
-    let outputPath = path.join(output, filePath);
+    const outputPath = path.join(output, filePath);
     const backPath = path.join(back, filePath);
     const stats = await fs.statSync(inputPath);
 
@@ -95,11 +95,11 @@ async function doHandle(folder, output, back) {
         backPath
       );
     } else {
-      outputPath = outputPath.replace(/\.[^.]+$/, ".webp");
-      const isFileExist = await fs.existsSync(outputPath);
+      let outputPathWebp = outputPath.replace(/\.[^.]+$/, ".webp");
+      const isFileExist = await fs.existsSync(outputPathWebp);
       if (!isFileExist) {
         if (includeFiles.includes(path.extname(inputPath))) {
-          await convertToWebP(inputPath, outputPath, backPath);
+          await convertToWebP(inputPath, outputPathWebp, backPath);
         } else {
           console.log(cls("文件不支持转换，将自动复制"), clsp(inputPath));
           doCopy(inputPath, outputPath);
