@@ -1,0 +1,17 @@
+{
+  "name": "twebp2",
+  "version": "0.0.1 beta",
+  "description": "",
+  "main": "index.js",
+  "bin": "./index.js",
+  "keywords": [
+    "imgage to webp"
+  ],
+  "author": "jyear",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "colors": "^1.4.0",
+    "sharp": "^0.34.2"
+  }
+}
