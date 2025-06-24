@@ -78,8 +78,20 @@ async function doCopy(fromPath, toPath) {
   await fs.copyFileSync(fromPath, toPath);
 }
 
-async function doHandle(folder, output, back) {
-  const files = await fs.readdirSync(folder);
+async function doHandle(infolder, outfolder, back) {
+  let folder = infolder;
+  let output = outfolder;
+  const isDirectory = await fs.statSync(folder);
+  let files = [];
+  if (isDirectory.isDirectory()) {
+    files = await fs.readdirSync(folder);
+  } else {
+    files = [path.basename(infolder)];
+    folder = path.dirname(infolder);
+  }
+
+  console.log(files, folder, output);
+
   for (let i = 0; i < files.length; i++) {
     const filePath = files[i];
     const inputPath = path.join(folder, filePath);
@@ -113,17 +125,12 @@ async function doHandle(folder, output, back) {
 const checkNeedCovert = (pathname) => {
   let canCovert = false;
   includeFiles.map((item) => {
-    if (pathname.endsWith(item)) {
-      canCovert = true;
-    }
-  });
-  includeFiles.map((item) => {
-    if (pathname.endsWith(item)) {
+    if (pathname.endsWith(path.normalize(item))) {
       canCovert = true;
     }
   });
   excludeFiles.map((item) => {
-    if (pathname.endsWith(item)) {
+    if (pathname.endsWith(path.normalize(item))) {
       canCovert = false;
     }
   });
@@ -152,7 +159,8 @@ async function doWatch() {
     console.log(cls("新增文件:"), cls(filePath, "yellow"));
     const file = filePath.replace(inputFolder, "");
     const fileName = path.join(outputFolder, file.replace(/\.[^.]+$/, ".webp"));
-    doHandle(filePath, fileName);
+    const toBackPath = path.dirname(path.join(backFolder, file));
+    doHandle(filePath, path.dirname(fileName), toBackPath);
   });
   watcher.on("change", async (filePath) => {
     console.log(cls("修改文件:"), cls(filePath, "yellow"));
@@ -163,7 +171,9 @@ async function doWatch() {
       console.log(cls("删除旧文件：%s"), fileName);
       await fs.unlinkSync(fileName);
     }
-    doHandle(filePath, fileName);
+
+    const toBackPath = path.dirname(path.join(backFolder, file));
+    doHandle(filePath, path.dirname(fileName), toBackPath);
   });
   watcher.on("unlink", async (filePath) => {
     console.log(cls("删除文件："), cls(filePath, "yellow"));
