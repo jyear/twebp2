@@ -3,4 +3,5 @@ module.exports = {
   outputFolder: "./output",
   backFolder: "./error",
   include: [".png", ".jpg", ".jpeg", ".gif"],
+  exclude: [],
 };

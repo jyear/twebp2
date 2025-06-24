@@ -25,6 +25,7 @@ const backFolder = path.join(
 const includeFiles = config.include
   ? config.include
   : [".png", ".jpg", ".jpeg", ".gif"];
+const excludeFiles = config.include ? config.exclude : [];
 async function init() {
   var isExist = await fs.existsSync(backFolder);
   if (!isExist) await fs.mkdirSync(backFolder);
@@ -41,12 +42,12 @@ const clsp = function (text, color = "yellow") {
 
 async function convertToWebP(inputPath, outputPath, backPath) {
   try {
-    let config = {};
-    if (inputPath.endsWith(".gif")) {
-      config = {
-        animated: true,
-      };
-    }
+    let config = { animated: true };
+    // if (inputPath.endsWith(".gif")) {
+    //   config = {
+    //     animated: true,
+    //   };
+    // }
 
     await sharp(inputPath, config).webp().toFile(outputPath);
     // console.log("Image converted to WebP successfully!");
@@ -98,7 +99,7 @@ async function doHandle(folder, output, back) {
       let outputPathWebp = outputPath.replace(/\.[^.]+$/, ".webp");
       const isFileExist = await fs.existsSync(outputPathWebp);
       if (!isFileExist) {
-        if (includeFiles.includes(path.extname(inputPath))) {
+        if (checkNeedCovert(inputPath)) {
           await convertToWebP(inputPath, outputPathWebp, backPath);
         } else {
           console.log(cls("文件不支持转换，将自动复制"), clsp(inputPath));
@@ -108,6 +109,27 @@ async function doHandle(folder, output, back) {
     }
   }
 }
+
+const checkNeedCovert = (pathname) => {
+  let canCovert = false;
+  includeFiles.map((item) => {
+    if (pathname.endsWith(item)) {
+      canCovert = true;
+    }
+  });
+  includeFiles.map((item) => {
+    if (pathname.endsWith(item)) {
+      canCovert = true;
+    }
+  });
+  excludeFiles.map((item) => {
+    if (pathname.endsWith(item)) {
+      canCovert = false;
+    }
+  });
+
+  return canCovert;
+};
 
 async function doWatch() {
   console.log(
@@ -130,8 +152,7 @@ async function doWatch() {
     console.log(cls("新增文件:"), cls(filePath, "yellow"));
     const file = filePath.replace(inputFolder, "");
     const fileName = path.join(outputFolder, file.replace(/\.[^.]+$/, ".webp"));
-    console.log(filePath, file, fileName);
-    // doHandle(filePath, fileName);
+    doHandle(filePath, fileName);
   });
   watcher.on("change", async (filePath) => {
     console.log(cls("修改文件:"), cls(filePath, "yellow"));
