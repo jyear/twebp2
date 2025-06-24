@@ -25,7 +25,7 @@ const backFolder = path.join(
 const includeFiles = config.include
   ? config.include
   : [".png", ".jpg", ".jpeg", ".gif"];
-const excludeFiles = config.include ? config.exclude : [];
+const excludeFiles = config.exclude ? config.exclude : [];
 async function init() {
   var isExist = await fs.existsSync(backFolder);
   if (!isExist) await fs.mkdirSync(backFolder);
