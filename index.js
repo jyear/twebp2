@@ -90,8 +90,6 @@ async function doHandle(infolder, outfolder, back) {
     folder = path.dirname(infolder);
   }
 
-  console.log(files, folder, output);
-
   for (let i = 0; i < files.length; i++) {
     const filePath = files[i];
     const inputPath = path.join(folder, filePath);
