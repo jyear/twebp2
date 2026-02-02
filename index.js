@@ -13,14 +13,14 @@ const configPath = path.join(root, "./twebp.config.js");
 const config = require(configPath);
 if (!config.inputFolder || !config.outputFolder) {
   throw new Error(
-    "请检查当前配置文件twebp.config.js的inputFolder和outputFolder"
+    "请检查当前配置文件twebp.config.js的inputFolder和outputFolder",
   );
 }
 const inputFolder = path.join(root, config.inputFolder);
 const outputFolder = path.join(root, config.outputFolder);
 const backFolder = path.join(
   root,
-  config.backFolder ? config.backFolder : config.outputFolder
+  config.backFolder ? config.backFolder : config.outputFolder,
 );
 const includeFiles = config.include
   ? config.include
@@ -58,7 +58,7 @@ async function convertToWebP(inputPath, outputPath, backPath) {
       cls("->", "red"),
       clsp(outputPath),
       cls("将自动复制文件到指定目录", "red"),
-      clsp(backPath)
+      clsp(backPath),
     );
     doCopy(inputPath, backPath);
   }
@@ -103,10 +103,12 @@ async function doHandle(infolder, outfolder, back) {
       doHandle(
         path.join(folder, filePath),
         path.join(output, filePath),
-        backPath
+        backPath,
       );
     } else {
-      let outputPathWebp = outputPath.replace(/\.[^.]+$/, ".webp");
+      let outputPathWebp = config.keepName
+        ? outputPath
+        : outputPath.replace(/\.[^.]+$/, ".webp");
       const isFileExist = await fs.existsSync(outputPathWebp);
       if (!isFileExist) {
         if (checkNeedCovert(inputPath)) {
@@ -142,7 +144,7 @@ async function doWatch() {
     cls("输入目录"),
     cls(inputFolder, "yellow"),
     cls("输出目录"),
-    cls(outputFolder, "yellow")
+    cls(outputFolder, "yellow"),
   );
   const watcher = chokidar.watch(inputFolder, {
     persistent: true,
