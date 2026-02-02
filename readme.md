@@ -8,7 +8,7 @@ module.exports = {
   outputFolder: "images", // 输出文件夹
   backFolder: "images_back", // 转换文件夹
   include: [".png", ".jpg", ".jpeg", ".gif"], // 包含的文件后缀
-  keepName: true, // 是否保持文件名
+  keepName: true, // 是否保持文件名,比如png转换成webp之后文件名依然保持.png结尾
 };
 ```
 
