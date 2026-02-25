@@ -6,11 +6,16 @@ const fs = require("fs");
 const path = require("path");
 const colors = require("colors");
 const chokidar = require("chokidar");
+const crypto = require("crypto");
 
 const root = process.cwd();
 
 const configPath = path.join(root, "./twebp.config.js");
 const config = require(configPath);
+const hashDir = path.join(root, "node_modules/.twebp2");
+const hashPath = path.join(hashDir, "twebp.hash.json");
+let hashData = {};
+
 if (!config.inputFolder || !config.outputFolder) {
   throw new Error(
     "请检查当前配置文件twebp.config.js的inputFolder和outputFolder",
@@ -26,7 +31,35 @@ const includeFiles = config.include
   ? config.include
   : [".png", ".jpg", ".jpeg", ".gif"];
 const excludeFiles = config.exclude ? config.exclude : [];
+
+function getFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash("md5");
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", (err) => reject(err));
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex")));
+  });
+}
+
+function loadHashes() {
+  if (fs.existsSync(hashPath)) {
+    try {
+      hashData = JSON.parse(fs.readFileSync(hashPath, "utf-8"));
+    } catch (e) {
+      hashData = {};
+    }
+  }
+}
+
+function saveHashes() {
+  fs.writeFileSync(hashPath, JSON.stringify(hashData, null, 2));
+}
+
 async function init() {
+  const isHashDirExist = await fs.existsSync(hashDir);
+  if (!isHashDirExist) await fs.mkdirSync(hashDir, { recursive: true });
+  loadHashes();
   var isExist = await fs.existsSync(backFolder);
   if (!isExist) await fs.mkdirSync(backFolder);
   var isExist = await fs.existsSync(outputFolder);
@@ -110,12 +143,27 @@ async function doHandle(infolder, outfolder, back) {
         ? outputPath
         : outputPath.replace(/\.[^.]+$/, ".webp");
       const isFileExist = await fs.existsSync(outputPathWebp);
-      if (!isFileExist) {
-        if (checkNeedCovert(inputPath)) {
+
+      const relativePath = path.relative(root, inputPath);
+      const currentHash = await getFileHash(inputPath);
+      const storedHash = hashData[relativePath];
+
+      if (checkNeedCovert(inputPath)) {
+        if (!isFileExist || currentHash !== storedHash) {
+          console.log(
+            cls("文件发生变化或输出不存在，开始转换:"),
+            clsp(inputPath),
+          );
           await convertToWebP(inputPath, outputPathWebp, backPath);
-        } else {
-          console.log(cls("文件不支持转换，将自动复制"), clsp(inputPath));
+          hashData[relativePath] = currentHash;
+          saveHashes();
+        }
+      } else {
+        if (!isFileExist || currentHash !== storedHash) {
+          console.log(cls("文件更新，将自动复制"), clsp(inputPath));
           doCopy(inputPath, outputPath);
+          hashData[relativePath] = currentHash;
+          saveHashes();
         }
       }
     }
@@ -158,19 +206,22 @@ async function doWatch() {
   watcher.on("add", async (filePath) => {
     console.log(cls("新增文件:"), cls(filePath, "yellow"));
     const file = filePath.replace(inputFolder, "");
-    const fileName = path.join(outputFolder, file.replace(/\.[^.]+$/, ".webp"));
+    let fileName = path.join(outputFolder, file);
+    if (!config.keepName) {
+      fileName = fileName.replace(/\.[^.]+$/, ".webp");
+    }
     const toBackPath = path.dirname(path.join(backFolder, file));
     doHandle(filePath, path.dirname(fileName), toBackPath);
   });
   watcher.on("change", async (filePath) => {
     console.log(cls("修改文件:"), cls(filePath, "yellow"));
     const file = filePath.replace(inputFolder, "");
-    const fileName = path.join(outputFolder, file.replace(/\.[^.]+$/, ".webp"));
-    const isExist = await fs.existsSync(fileName);
-    if (isExist) {
-      console.log(cls("删除旧文件：%s"), fileName);
-      await fs.unlinkSync(fileName);
+    let fileName = path.join(outputFolder, file);
+    if (!config.keepName) {
+      fileName = fileName.replace(/\.[^.]+$/, ".webp");
     }
+
+    // logic removed: deleting file before handle
 
     const toBackPath = path.dirname(path.join(backFolder, file));
     doHandle(filePath, path.dirname(fileName), toBackPath);
@@ -178,11 +229,20 @@ async function doWatch() {
   watcher.on("unlink", async (filePath) => {
     console.log(cls("删除文件："), cls(filePath, "yellow"));
     const file = filePath.replace(inputFolder, "");
-    const fileName = path.join(outputFolder, file.replace(/\.[^.]+$/, ".webp"));
+    let fileName = path.join(outputFolder, file);
+    if (!config.keepName) {
+      fileName = fileName.replace(/\.[^.]+$/, ".webp");
+    }
     const isExist = await fs.existsSync(fileName);
     if (isExist) {
       console.log(cls("删除转换后的文件文件", "red"), cls(fileName, "yellow"));
       fs.unlinkSync(fileName);
+    }
+
+    const relativePath = path.relative(root, filePath);
+    if (hashData[relativePath]) {
+      delete hashData[relativePath];
+      saveHashes();
     }
   });
 }
