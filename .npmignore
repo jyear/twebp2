@@ -1,0 +1,7 @@
+node_modules
+public_original
+output
+error
+.gitignore
+twebp.hash.json
+npm-debug.log
